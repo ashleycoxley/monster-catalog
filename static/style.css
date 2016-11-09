@@ -1,0 +1,55 @@
+#monster-create {
+    /* Prevent nearby text being highlighted when accidentally dragging mouse outside confines of the canvas */
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+#monster-canvas {
+	cursor: crosshair;
+}
+
+.purple {
+	background-color: #3c003e;
+}
+
+.blue {
+	background-color: #0074d9;
+}
+
+.green {
+	background-color: #0f9a56;
+}
+
+.yellow {
+	background-color: #fedc32;
+}
+
+.red {
+	background-color: #cc1601;
+}
+
+.orange {
+	background-color: #ff7f00;
+}
+
+.black {
+	background-color: black;
+}
+
+.white {
+	background-color: white;
+}
+
+.pencil-color-choice {
+	height: 15px;
+}
+
+.pencil-color {
+	height: 100%;
+	margin: 5px;
+	border: 1px solid black;
+}
