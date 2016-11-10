@@ -13,7 +13,7 @@ from oauth2client.client import flow_from_clientsecrets
 from oauth2client.client import FlowExchangeError
 
 import sqlalchemy
-from database import Base, User, Monster
+from models import Base, User, Monster
 
 
 CLIENT_ID = json.loads(
@@ -51,7 +51,8 @@ def create_monster():
         return flask.redirect('/signin')
 
     if flask.request.method == 'GET':
-        return flask.render_template('create.html')
+        return flask.render_template('create.html',
+                                     submit_button_text='CREATE A MONSTER')
 
     elif flask.request.method == 'POST':
         encoded_picture = flask.request.form.get('encoded_picture')
@@ -74,8 +75,8 @@ def create_monster():
             created_date=datetime.datetime.now()
             )
 
-        db_session.add(monster)
         try:
+            db_session.add(monster)
             db_session.commit()
             return flask.jsonify({'result': 'success'})
         except Exception as e:
@@ -98,16 +99,66 @@ def generate_picture_id_url():
 
 def s3_store_picture(picture_id, picture):
     """Store picture in S3."""
-    session = boto3.session.Session(
+    s3_session = boto3.session.Session(
         aws_access_key_id=app.config['AWS_ACCESS_KEY_ID'],
         aws_secret_access_key=app.config['AWS_SECRET_ACCESS_KEY']
     )
-    s3 = session.resource(service_name='s3')
+    s3 = s3_session.resource(service_name='s3')
 
     s3.Bucket(app.config['AWS_S3_BUCKET']).put_object(
         Key=picture_id,
         Body=picture,
         ContentType='image/png')
+
+
+@app.route('/edit/<int:monster_id>', methods=['GET', 'POST'])
+def edit_monster(monster_id):
+    monster = db_session.query(Monster).filter_by(id=monster_id).one()
+    current_user_id = flask.session.get('user_id')
+    if monster is None:
+        flask.redirect('/')
+    if current_user_id is None:
+        flask.redirect('/signin')
+    # monster = monster_query[0]
+    if current_user_id != monster.creator:
+         # Add error message here
+        flask.redirect('/')
+
+    if flask.request.method == 'GET':
+        return flask.render_template('create.html',
+                                     name=monster.name,
+                                     intentions=monster.intentions,
+                                     diet=monster.diet,
+                                     enjoys=monster.enjoys,
+                                     picture_url=monster.picture,
+                                     submit_button_text='SUBMIT EDIT')
+
+    elif flask.request.method == 'POST':
+        encoded_picture = flask.request.form.get('encoded_picture')
+        picture = decode_picture(encoded_picture)
+        picture_id, picture_url = generate_picture_id_url()
+
+        try:
+            s3_store_picture(picture_id, picture)
+        except:
+            # TODO add error message here in template
+            return flask.render_template('create.html')
+
+        monster.name = flask.request.form['name']
+        monster.diet = flask.request.form['diet']
+        monster.enjoys = flask.request.form['enjoys']
+        monster.picture = picture_url
+        monster.intentions = flask.request.form['intentions']
+        monster.edited_date = datetime.datetime.now()
+
+        try:
+            db_session.add(monster)
+            db_session.commit()
+            return flask.jsonify({'result': 'success'})
+        except Exception as e:
+            db_session.rollback()
+            # TODO add error message here in template
+            return flask.jsonify({'result': 'fail'})
 
 
 @app.route('/api/monsters', methods=['GET'])

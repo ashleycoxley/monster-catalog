@@ -4,7 +4,7 @@
 <div class='container-fluid monster-display-grid'>
 	<div class='row'>
 	{% for monster in monsters: %}
-		<div class='col-md-6'>
+		<div class='col-md-6 monster-box'>
 			<div class='row'>
 				<div class='col-sm-12 text-center'>
 					<h2>{{monster.name}}</h2>
@@ -19,6 +19,12 @@
 				</div>
 				<div class='col-sm-5 monster-picture-box'>
 					<img src='{{monster.picture}}' class='img-responsive'>
+				</div>
+			</div>
+			<!-- Maybe only show this if user=creator? -->
+			<div class='row'>
+				<div class='col-sm-12 text-right'>
+					<a href='/edit/{{monster.id}}' class='btn btn-default'>Edit</a>
 				</div>
 			</div>
 		</div>

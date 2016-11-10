@@ -23,6 +23,17 @@ function draw(x, y, context, pencilColor) {
 $(document).ready(function(e) {
     var canvas = $('#monster-canvas');
     var context = canvas.get(0).getContext('2d');
+    // Check for previously defined image (in edit case)
+    var prevImageUrl = canvas.data('previmage');
+    if (prevImageUrl) {
+        var prevMonsterImage = new Image();
+        prevMonsterImage.setAttribute('crossOrigin', 'anonymous');
+        prevMonsterImage.src = prevImageUrl;
+        prevMonsterImage.onload = function() {
+            context.drawImage(prevMonsterImage,0,0);
+        };
+    }
+
     var drawing = false;
 
     $('.pencil-color').click(function(){
@@ -72,7 +83,7 @@ $(document).ready(function(e) {
         var enjoys = $('textarea[name=enjoys]').val();
         var intentions = $('select[name=intentions]').val();
         var pictureUrl = canvas[0].toDataURL();
-        
+
         // base64 encoding from http://jsfiddle.net/jasdeepkhalsa/l5hmw/
         var encodedPicture = pictureUrl.replace(/^data:image\/(png|jpg);base64,/, "");
         
@@ -84,7 +95,7 @@ $(document).ready(function(e) {
             'encoded_picture': encodedPicture
         };
 
-        addMonsterUrl = '/create';
+        addMonsterUrl = window.location.pathname;
 
         var postData = $.post(addMonsterUrl, data);
 
@@ -94,7 +105,7 @@ $(document).ready(function(e) {
             if (response['result'] === 'success') {
                 window.location.href = '/';
             } else {
-                // TODO: better error handling here
+                // TODO better error handling here
                 console.log('error');
             }
         });
