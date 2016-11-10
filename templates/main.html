@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class='container-fluid monster-display-grid'>
+	<div class='row'>
+	{% for monster in monsters: %}
+		<div class='col-md-6'>
+			<div class='row'>
+				<div class='col-sm-12 text-center'>
+					<h2>{{monster.name}}</h2>
+				</div>
+			</div>
+			<div class='row'>
+				<div class='col-sm-5 col-sm-offset-1 monster-description-box'>
+					<h4>Eats:</h4>
+					<p>{{monster.diet}}</p>
+					<h4>Enjoys:</h4>
+					<p>{{monster.enjoys}}</p>
+				</div>
+				<div class='col-sm-5 monster-picture-box'>
+					<img src='{{monster.picture}}' class='img-responsive'>
+				</div>
+			</div>
+		</div>
+	{% endfor %}
+	</div>
+</div>
+
+{% endblock %}

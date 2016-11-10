@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block content %}
+<script src="{{url_for('static', filename='monsterDraw.js')}}"></script>
+<div class='container-fluid'>
+	<div class='row'>
+		<form id='monster-create' method='post' class='form-horizontal'>
+			<div class="col-md-4 col-md-offset-2">
+				<fieldset>
+					<div class='form-group'>
+						<label for='name' class="col-sm-3 control-label">Name</label>
+						<div class="col-sm-9">
+							<input type='text' name='name' class='form-control'>
+						</div>
+					</div>
+					<div class='form-group'>
+						<label for='intentions' class='col-sm-3 control-label'>Intentions</label>
+						<div class="col-sm-9">
+					  		<select class='form-control' name='intentions'>
+					    		<option>Good</option>
+					    		<option>Evil</option>
+					    		<option>Conflicted</option>
+					  		</select>
+					  	</div>
+					</div>
+					<div class='form-group'>
+						<label for='diet' class="col-sm-3 control-label">Diet</label>
+						<div class="col-sm-9">
+							<textarea class='form-control' name='diet'></textarea>
+						</div>
+					</div>
+					<div class='form-group'>
+						<label for='name' class="col-sm-3 control-label">Enjoys</label>
+						<div class="col-sm-9">
+							<textarea class='form-control' name='enjoys'></textarea>
+						</div>
+					</div>
+				</fieldset>
+			</div>
+			<div class="col-md-4">
+				<div class='form-group'>
+					<div class='row'>
+						<label for='picture'>Draw a picture</label>
+						<div class="col-sm-10">
+							<canvas id='monster-canvas' width="300" height="300" style='border: 2px solid black'></canvas>
+						</div>
+					</div>
+					<div class='row'>
+						<button type='submit' id='clear-canvas'>Clear</button>
+					</div>
+					<div class='pencil-color-choice row'>
+						<div class='col-sm-1 col-sm-offset-1 pencil-color purple'>
+						</div>
+						<div class='col-sm-1 pencil-color blue'>
+						</div>
+						<div class='col-sm-1 pencil-color green'>
+						</div>
+						<div class='col-sm-1 pencil-color yellow'>
+						</div>
+						<div class='col-sm-1 pencil-color orange'>
+						</div>
+						<div class='col-sm-1 pencil-color red'>
+						</div>
+						<div class='col-sm-1 pencil-color black'>
+						</div>
+						<div class='col-sm-1 pencil-color white'>
+						</div>
+					</div>
+				</div>
+			</div>
+	</div>
+	<div class='row'>
+			<div class='form-group'>
+    			<div class='col-sm-offset-2 col-sm-10'>
+      				<button type='submit' class='btn btn-default' name='create-monster' id='create-monster'>CREATE A MONSTER</button>
+    			</div>
+  			</div>
+		</form>
+	</div>
+</div>
+
+{% endblock %}
