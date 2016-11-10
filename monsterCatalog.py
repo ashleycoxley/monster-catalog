@@ -8,7 +8,6 @@ import datetime
 import boto3
 import base64
 import uuid
-import werkzeug
 
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.client import FlowExchangeError
@@ -48,49 +47,75 @@ def sign_in():
 
 @app.route('/create', methods=['GET', 'POST'])
 def create_monster():
-    # print flask.request.form
     if 'username' not in flask.session:
         return flask.redirect('/signin')
-    if flask.request.method == 'POST':
-        if 'encoded_picture' in flask.request.form:
-            encoded_picture = flask.request.form.get('encoded_picture')
-            picture = base64.b64decode(str(encoded_picture))
-            picture_id = str(uuid.uuid4())
-            picture_url = 'https://s3.amazonaws.com/monster-catalog/' + picture_id
 
-            session = boto3.session.Session(
-                aws_access_key_id=app.config['AWS_ACCESS_KEY_ID'],
-                aws_secret_access_key=app.config['AWS_SECRET_ACCESS_KEY']
-            )
-            s3 = session.resource(service_name='s3')
-
-            s3.Bucket(app.config['AWS_S3_BUCKET']).put_object(
-                Key=picture_id,
-                Body=picture,
-                ContentType='image/png')
-
-            monster = Monster(
-                name=flask.request.form['name'],
-                diet=flask.request.form['diet'],
-                enjoys=flask.request.form['enjoys'],
-                creator=flask.session['user_id'],
-                picture=picture_url,
-                intentions=flask.request.form['intentions'],
-                created_date=datetime.datetime.now()
-                )
-            db_session.add(monster)
-            try:
-                db_session.commit()
-                print "committed"
-            except Exception as e:
-                db_session.rollback()
-                print "failed"
-                print e
-            return flask.url_for('main_page')
-        else:
-            pass
-    else:
+    if flask.request.method == 'GET':
         return flask.render_template('create.html')
+
+    elif flask.request.method == 'POST':
+        encoded_picture = flask.request.form.get('encoded_picture')
+        picture = decode_picture(encoded_picture)
+        picture_id, picture_url = generate_picture_id_url()
+
+        try:
+            s3_store_picture(picture_id, picture)
+        except:
+            # Add error message here in template
+            return flask.render_template('create.html')
+
+        monster = Monster(
+            name=flask.request.form['name'],
+            diet=flask.request.form['diet'],
+            enjoys=flask.request.form['enjoys'],
+            creator=flask.session['user_id'],
+            picture=picture_url,
+            intentions=flask.request.form['intentions'],
+            created_date=datetime.datetime.now()
+            )
+
+        db_session.add(monster)
+        try:
+            db_session.commit()
+            return flask.jsonify({'result': 'success'})
+        except Exception as e:
+            db_session.rollback()
+            # Add error message here in template
+            return flask.jsonify({'result': 'fail'})
+
+
+def decode_picture(encoded_picture):
+    """Decode base64-encoded picture."""
+    return base64.b64decode(str(encoded_picture))
+
+
+def generate_picture_id_url():
+    """Generate random picture ID and S3 link to picture."""
+    picture_id = str(uuid.uuid4())
+    picture_url = 'https://s3.amazonaws.com/monster-catalog/' + picture_id
+    return picture_id, picture_url
+
+
+def s3_store_picture(picture_id, picture):
+    """Store picture in S3."""
+    session = boto3.session.Session(
+        aws_access_key_id=app.config['AWS_ACCESS_KEY_ID'],
+        aws_secret_access_key=app.config['AWS_SECRET_ACCESS_KEY']
+    )
+    s3 = session.resource(service_name='s3')
+
+    s3.Bucket(app.config['AWS_S3_BUCKET']).put_object(
+        Key=picture_id,
+        Body=picture,
+        ContentType='image/png')
+
+
+@app.route('/api/monsters', methods=['GET'])
+def monsters():
+    monsters = db_session.query(Monster).all()
+    monsters_serialized = [monster.serialize for monster in monsters]
+
+    return flask.jsonify(monsters=monsters_serialized)
 
 
 @app.route('/gconnect', methods=['POST'])

@@ -67,7 +67,6 @@ $(document).ready(function(e) {
     });
 
     $('#create-monster').click(function(e) {
-        e.preventDefault();
         var name = $('input[name=name]').val();
         var diet = $('textarea[name=diet]').val();
         var enjoys = $('textarea[name=enjoys]').val();
@@ -85,16 +84,22 @@ $(document).ready(function(e) {
             'encoded_picture': encodedPicture
         };
 
-        console.log(data);
-
         addMonsterUrl = '/create';
 
         var postData = $.post(addMonsterUrl, data);
 
         // Redirect to main page once submitted
-        postData.done(function() {
-            window.location.href='/';
-            // console.log(returnData);
+        postData.done(function(response) {
+            console.log(response);
+            if (response['result'] === 'success') {
+                window.location.href = '/';
+            } else {
+                // TODO: better error handling here
+                console.log('error');
+            }
         });
+
+        e.preventDefault();
+        return false;
     });
 });
