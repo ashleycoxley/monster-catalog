@@ -113,15 +113,7 @@ def s3_store_picture(picture_id, picture):
 
 @app.route('/edit/<int:monster_id>', methods=['GET', 'POST'])
 def edit_monster(monster_id):
-    monster = db_session.query(Monster).filter_by(id=monster_id).one()
-    current_user_id = flask.session.get('user_id')
-    if monster is None:
-        flask.redirect('/')
-    if current_user_id is None:
-        flask.redirect('/signin')
-    if current_user_id != monster.creator:
-         # Add error message here
-        flask.redirect('/')
+    monster = authorize_monster_change(monster_id)
 
     if flask.request.method == 'GET':
         return flask.render_template('create.html',
@@ -158,6 +150,34 @@ def edit_monster(monster_id):
             db_session.rollback()
             # TODO add error message here in template
             return flask.jsonify({'result': 'fail'})
+
+
+@app.route('/delete/<int:monster_id>', methods=['POST'])
+def delete_monster(monster_id):
+    monster = authorize_monster_change(monster_id)
+    try:
+        db_session.delete(monster)
+        db_session.commit()
+        # TODO add success message here in template
+        return flask.redirect('/')
+
+    except sqlalchemy.exc.SQLAlchemyError as e:
+        db_session.rollback()
+        # TODO add error message here in template
+        return flask.redirect('/')
+
+
+def authorize_monster_change(monster_id):
+    monster = db_session.query(Monster).filter_by(id=monster_id).one()
+    current_user_id = flask.session.get('user_id')
+    if monster is None:
+        flask.redirect('/')
+    if current_user_id is None:
+        flask.redirect('/signin')
+    if current_user_id != monster.creator:
+         # Add error message here
+        flask.redirect('/')
+    return monster
 
 
 @app.route('/api/monsters', methods=['GET'])
