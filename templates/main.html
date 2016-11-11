@@ -21,6 +21,12 @@
 					<img src='{{monster.picture}}' class='img-responsive'>
 				</div>
 			</div>
+			<!-- Maybe only show this if user=creator? -->
+			<div class='row'>
+				<div class='col-sm-12 text-right'>
+					<a href='/edit/{{monster.id}}' class='btn btn-default'>Edit</a>
+				</div>
+			</div>
 		</div>
 	{% endfor %}
 	</div>
