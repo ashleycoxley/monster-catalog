@@ -79,7 +79,7 @@ def create_monster():
             db_session.add(monster)
             db_session.commit()
             return flask.jsonify({'result': 'success'})
-        except Exception as e:
+        except sqlalchemy.exc.SQLAlchemyError as e:
             db_session.rollback()
             # Add error message here in template
             return flask.jsonify({'result': 'fail'})
@@ -119,7 +119,6 @@ def edit_monster(monster_id):
         flask.redirect('/')
     if current_user_id is None:
         flask.redirect('/signin')
-    # monster = monster_query[0]
     if current_user_id != monster.creator:
          # Add error message here
         flask.redirect('/')
