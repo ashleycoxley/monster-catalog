@@ -1,3 +1,27 @@
+/*MAIN PAGE*/
+.monster-name-box {
+	border-radius: 10px;
+}
+
+.good > .monster-name-box {
+	background-color: #c0ca55;
+}
+
+.evil > .monster-name-box {
+	background-color: #f07c6c;
+}
+
+.conflicted > .monster-name-box {
+	background-color: #ad5472;
+}
+
+.intentions-tag {
+	font-weight: bold;
+	opacity: 0.7;
+}
+
+/* MONSTER DRAWING*/
+
 #monster-create {
     /* Prevent nearby text being highlighted when accidentally dragging mouse outside confines of the canvas */
     -webkit-touch-callout: none;

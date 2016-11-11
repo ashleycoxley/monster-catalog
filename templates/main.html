@@ -1,13 +1,38 @@
 {% extends "base.html" %}
 {% block content %}
 
+<script src="{{url_for('static', filename='monsterSort.js')}}"></script>
 <div class='container-fluid monster-display-grid'>
 	<div class='row'>
+		<div class='col-md-12'>
+			<form id='monster-sort' class='form'>
+				<div class='form-group'>
+					<div class="col-sm-4 col-sm-offset-8">
+					  	<select class='form-control' name='monster-sort'>
+					  		<option selected='selected' disabled='disabled'>Sort by monster type</option>
+					    	<option value='good'>Good</option>
+					    	<option value='evil'>Evil</option>
+					    	<option value='conflicted'>Conflicted</option>
+					    	<option value='all'>All</option>
+					  	</select>
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+	<div class='row'>
 	{% for monster in monsters: %}
-		<div class='col-md-6'>
-			<div class='row'>
-				<div class='col-sm-12 text-center'>
-					<h2>{{monster.name}}</h2>
+		<div class='col-md-6 monster-box {{monster.intentions.lower()}}'>
+			<div class='row monster-name-box'>
+				<div class='row'>
+					<div class='col-sm-12 text-left'>
+						<p class='intentions-tag'>{{monster.intentions.upper()}}</p>
+					</div>
+				</div>
+				<div class='row'>
+					<div class='col-sm-12 text-center'>
+						<h2>{{monster.name}}</h2>
+					</div>
 				</div>
 			</div>
 			<div class='row'>
