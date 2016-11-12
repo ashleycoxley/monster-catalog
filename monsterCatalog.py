@@ -55,6 +55,15 @@ def create_monster():
                                      submit_button_text='CREATE A MONSTER')
 
     elif flask.request.method == 'POST':
+        name = flask.request.form['name']
+        diet = flask.request.form['diet']
+        enjoys = flask.request.form['enjoys']
+        intentions = flask.request.form['intentions']
+
+        for user_input in [name, diet, enjoys]:
+            if len(user_input) < 1:
+                return ('', 204)  # Stay on page if any fields are empty
+
         encoded_picture = flask.request.form.get('encoded_picture')
         picture = decode_picture(encoded_picture)
         picture_id, picture_url = generate_picture_id_url()
@@ -66,12 +75,12 @@ def create_monster():
             return flask.render_template('create.html')
 
         monster = Monster(
-            name=flask.request.form['name'],
-            diet=flask.request.form['diet'],
-            enjoys=flask.request.form['enjoys'],
+            name=name,
+            diet=diet,
+            enjoys=enjoys,
             creator=flask.session['user_id'],
             picture=picture_url,
-            intentions=flask.request.form['intentions'],
+            intentions=intentions,
             created_date=datetime.datetime.now()
             )
 

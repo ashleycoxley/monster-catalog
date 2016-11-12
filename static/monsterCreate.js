@@ -20,6 +20,16 @@ function draw(x, y, context, pencilColor) {
     yPrev = y;
 }
 
+function checkIfEmpty(field) {
+    var value = field.val();
+    if (!value) {
+        field.closest('.form-group').addClass('has-error');
+    } else {
+        field.closest('.form-group').removeClass('has-error');
+        return value;
+    }
+}
+
 $(document).ready(function(e) {
     var canvas = $('#monster-canvas');
     var context = canvas.get(0).getContext('2d');
@@ -78,10 +88,16 @@ $(document).ready(function(e) {
     });
 
     $('#create-monster').click(function(e) {
-        var name = $('input[name=name]').val();
-        var diet = $('textarea[name=diet]').val();
-        var enjoys = $('textarea[name=enjoys]').val();
-        var intentions = $('select[name=intentions]').val();
+        var nameInput = $('input[name=name]');
+        var dietInput = $('textarea[name=diet]');
+        var enjoysInput = $('textarea[name=enjoys]');
+        var intentionsInput = $('select[name=intentions]');
+
+        var name = checkIfEmpty(nameInput);
+        var diet = checkIfEmpty(dietInput);
+        var enjoys = checkIfEmpty(enjoysInput);
+        var intentions = intentionsInput.val(); // Has default value of "Good"
+
         var pictureUrl = canvas[0].toDataURL();
 
         // base64 encoding from http://jsfiddle.net/jasdeepkhalsa/l5hmw/
