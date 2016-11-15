@@ -18,6 +18,9 @@ CLIENT_ID = json.loads(
     open('client_secret_478230017741-rd1hon3dcgt9eoutdkjd5lsiidat2gp5.apps.googleusercontent.com.json', 'r').read())['web']['client_id']
 APPLICATION_NAME = "Monster Catalog"
 
+FB_TOKEN_EXCHANGE_URL = 'https://graph.facebook.com/oauth/access_token'
+FB_USER_QUERY_URL = 'https://graph.facebook.com/v2.4/me'
+
 
 app = flask.Flask(__name__)
 
@@ -30,7 +33,6 @@ db_session = DBSession()
 
 @app.route('/')
 def main_page():
-    print flask.session
     user_id = flask.session.get('user_id')
     monsters = db_session.query(Monster).limit(20).all()
     return flask.render_template('main.html',
@@ -148,7 +150,7 @@ def edit_monster(monster_id):
             db_session.add(monster)
             db_session.commit()
             return flask.jsonify({'result': 'success'})
-        except Exception as e:
+        except sqlalchemy.ext.SQLAlchemyError as e:
             db_session.rollback()
             # TODO add error message here in template
             return flask.jsonify({'result': 'fail'})
@@ -192,55 +194,53 @@ def monsters():
 
 @app.route('/signin')
 def sign_in():
-    print flask.session
     if 'user_id' not in flask.session:
-        state = set_state()
+        session_token = set_session_token()
         return flask.render_template('signup.html',
-                                     state=state)
+                                     session_token=session_token)
     else:
         return flask.redirect('/')
 
 
-def set_state():
-    state = ''.join(random.choice(string.ascii_uppercase + string.digits)
-                    for x in xrange(32))
-    flask.session['state'] = state
-    return state
+def set_session_token():
+    session_token = ''.join(random.choice(string.ascii_uppercase + string.digits)
+                                       for x in xrange(32))
+    flask.session['session_token'] = session_token
+    return session_token
 
 
 @app.route('/fbconnect', methods=['POST'])
 def fbconnect():
-    # Check that local state parameter matches the one sent to Facebook
-    fb_returned_state = flask.request.args.get('state')
-    check_state_parameter(fb_returned_state)
+    # Check that Flask session_token parameter matches the one originally sent
+    # to Facebook
+    fb_returned_session_token = flask.request.args.get('state')
+    verify_session_token(fb_returned_session_token)
 
     # Exchange for long-lived access token
     short_lived_access_token = flask.request.data
-    long_lived_access_token = exchange_fb_token(short_lived_access_token)
+    long_lived_access_token = exchange_fb_token(short_lived_access_token,
+                                                FB_TOKEN_EXCHANGE_URL)
 
     # Get FB user data; if email doesn't exist, add user
-    fb_user_data = get_fb_user_data(long_lived_access_token)
+    fb_user_data = get_fb_user_data(long_lived_access_token,
+                                    FB_USER_QUERY_URL)
     user_id = add_or_verify_user(fb_user_data)
 
     if user_id:
-        print fb_user_data['id']
         flask.session['facebook_id'] = fb_user_data['id']
         flask.session['access_token'] = long_lived_access_token
-        print flask.session
-        success_message = 'Login successful.'
-        return (success_message, 200)
+        return ('Login successful.', 200)
     else:
-        fail_message = 'Failed to login.'
-        return (fail_message, 401)
+        return ('Failed to login.', 401)
 
 
-def check_state_parameter(returned_state):
-    flask_state = flask.session['state']
+def verify_session_token(returned_session_token):
+    """Verify that session token parameter sent to 3rd party oauth service 
+    matches current session token."""
+    flask_session_token = flask.session.get('session_token')
 
-    if returned_state != flask_state:
-        bad_state_response = flask.jsonify('Invalid state parameter.')
-        bad_state_response.status_code = 401
-        return bad_state_response
+    if returned_session_token != flask_session_token:
+        return ('Invalid oauth session token parameter.', 401)
 
 
 def load_fb_app_data():
@@ -251,31 +251,29 @@ def load_fb_app_data():
     return app_id, app_secret
 
 
-def exchange_fb_token(short_lived_access_token):
+def exchange_fb_token(short_lived_access_token, FB_TOKEN_EXCHANGE_URL):
     """Exchange short-lived access token for long-lived one."""
     app_id, app_secret = load_fb_app_data()
-    fb_token_exchange_url = 'https://graph.facebook.com/oauth/access_token'
     fb_token_exchange_params = {
         'grant_type': 'fb_exchange_token',
         'client_id': app_id,
         'client_secret': app_secret,
         'fb_exchange_token': short_lived_access_token
     }
-    fb_token_exchange_result = requests.get(fb_token_exchange_url,
+    fb_token_exchange_result = requests.get(FB_TOKEN_EXCHANGE_URL,
                                             params=fb_token_exchange_params)
-    fb_token_exchange_text = fb_token_exchange_result.text
-    long_lived_access_token = fb_token_exchange_text.split("&")[0].split('=')[1]
+    fb_token_exchange_result_dict = urlparse.parse_qs(fb_token_exchange_result.text)
+    long_lived_access_token = fb_token_exchange_result_dict.get('access_token')
     return long_lived_access_token
 
 
-def get_fb_user_data(long_lived_access_token):
+def get_fb_user_data(long_lived_access_token, FB_USER_QUERY_URL):
     """Using long-lived access token, query Facebook Graph API for user data."""
-    fb_user_query_url = 'https://graph.facebook.com/v2.4/me'
     fb_user_query_params = {
         'fields': 'name,id,email',
         'access_token': long_lived_access_token
     }
-    fb_user_query_result = requests.get(fb_user_query_url,
+    fb_user_query_result = requests.get(FB_USER_QUERY_URL,
                                         params=fb_user_query_params)
     fb_user_data = json.loads(fb_user_query_result.text)
 
@@ -317,6 +315,7 @@ def create_user(user_data):
         db_session.commit()
     except sqlalchemy.ext.SQLAlchemyError:
         db_session.rollback()
+        # TODO redirect and add error message
     user = db_session.query(User).filter_by(email=user_data['email']).one()
     return user.id
 

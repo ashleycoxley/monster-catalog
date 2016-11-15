@@ -3,13 +3,7 @@
 {% block content %}
 <div class='container-fluid'>
     <div class='row'>
-        <div id='login-success' class="alert alert-success text-center hide">
-            <strong>Success!</strong> You are now logged in. Redirecting...
-            <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-        </div>
-        <div  id='login-fail' class="alert alert-danger text-center hide">
-            <strong>Login failed.</strong> Please try again.
-            <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+        <div id='login-alert' class="alert text-center hide">
         </div>
     </div>
     <div class='row'>
@@ -66,6 +60,7 @@
 
 
 <script>
+    // Facebook JS SDK https://developers.facebook.com/docs/javascript
     window.fbAsyncInit = function() {
         FB.init({
             appId      : '1788759848038589',
@@ -88,18 +83,26 @@
         FB.api('/me', function(response) {
             $.ajax({
                 type: 'POST',
-                url: '/fbconnect?state={{state}}',
+                url: '/fbconnect?state={{session_token}}',
                 processData: false,
                 data: access_token,
                 contentType: 'application/octet-stream; charset=utf-8',
                 success: function() {
-                    $('#login-success').removeClass('hide');
+                    $('#login-alert').append(
+                        "<strong>Success!</strong> You are now logged in. Redirecting..."
+                    );
+                    $('#login-alert').addClass('alert-success');
+                    $('#login-alert').removeClass('hide');
                     setTimeout(function() {
                         window.location.href = "/";
                     }, 2000);
                 },
                 error: function() {
-                    $('#login-fail').show();
+                    $('#login-alert').append(
+                        "<strong>Login failed.</strong> Please try again."
+                    );
+                    $('#login-alert').addClass('alert-danger');
+                    $('#login-alert').removeClass('hide');
                 }
             });
         });
