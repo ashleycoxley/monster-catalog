@@ -8,9 +8,7 @@ import datetime
 import boto3
 import base64
 import uuid
-
-from oauth2client.client import flow_from_clientsecrets
-from oauth2client.client import FlowExchangeError
+import urlparse
 
 import sqlalchemy
 from models import Base, User, Monster
@@ -19,6 +17,9 @@ from models import Base, User, Monster
 CLIENT_ID = json.loads(
     open('client_secret_478230017741-rd1hon3dcgt9eoutdkjd5lsiidat2gp5.apps.googleusercontent.com.json', 'r').read())['web']['client_id']
 APPLICATION_NAME = "Monster Catalog"
+
+FB_TOKEN_EXCHANGE_URL = 'https://graph.facebook.com/oauth/access_token'
+FB_USER_QUERY_URL = 'https://graph.facebook.com/v2.4/me'
 
 
 app = flask.Flask(__name__)
@@ -32,17 +33,11 @@ db_session = DBSession()
 
 @app.route('/')
 def main_page():
+    user_id = flask.session.get('user_id')
     monsters = db_session.query(Monster).limit(20).all()
-    return flask.render_template('main.html', monsters=monsters)
-
-
-# Create anti-forgery state token
-@app.route('/signin')
-def sign_in():
-    state = ''.join(random.choice(string.ascii_uppercase + string.digits)
-                    for x in xrange(32))
-    flask.session['state'] = state
-    return flask.render_template('signup.html', STATE=state)
+    return flask.render_template('main.html',
+                                 monsters=monsters,
+                                 user_id=user_id)
 
 
 @app.route('/create', methods=['GET', 'POST'])
@@ -155,7 +150,7 @@ def edit_monster(monster_id):
             db_session.add(monster)
             db_session.commit()
             return flask.jsonify({'result': 'success'})
-        except Exception as e:
+        except sqlalchemy.ext.SQLAlchemyError as e:
             db_session.rollback()
             # TODO add error message here in template
             return flask.jsonify({'result': 'fail'})
@@ -197,180 +192,140 @@ def monsters():
     return flask.jsonify(monsters=monsters_serialized)
 
 
-@app.route('/gconnect', methods=['POST'])
-def gconnect():
-    # Validate state token
-    if flask.request.args.get('state') != flask.session['state']:
-        response = flask.make_response(json.dumps('Invalid state parameter.'), 401)
-        response.headers['Content-Type'] = 'application/json'
-        return response
-    # Obtain authorization code
-    code = flask.request.data
+@app.route('/signin')
+def sign_in():
+    if 'user_id' not in flask.session:
+        session_token = set_session_token()
+        return flask.render_template('signup.html',
+                                     session_token=session_token)
+    else:
+        return flask.redirect('/')
 
-    try:
-        # Upgrade the authorization code into a credentials object
-        oauth_flow = flow_from_clientsecrets('client_secret_478230017741-rd1hon3dcgt9eoutdkjd5lsiidat2gp5.apps.googleusercontent.com.json', scope='')
-        oauth_flow.redirect_uri = 'postmessage'
-        credentials = oauth_flow.step2_exchange(code)
-    except FlowExchangeError:
-        response = flask.make_response(
-            json.dumps('Failed to upgrade the authorization code.'), 401)
-        response.headers['Content-Type'] = 'application/json'
-        return response
 
-    # Check that the access token is valid.
-    access_token = credentials.access_token
-    url = ('https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=%s'
-           % access_token)
-    h = httplib2.Http()
-    result = json.loads(h.request(url, 'GET')[1])
-    # If there was an error in the access token info, abort.
-    if result.get('error') is not None:
-        response = flask.make_response(json.dumps(result.get('error')), 500)
-        response.headers['Content-Type'] = 'application/json'
-        return response
-
-    # Verify that the access token is used for the intended user.
-    gplus_id = credentials.id_token['sub']
-    if result['user_id'] != gplus_id:
-        response = flask.make_response(
-            json.dumps("Token's user ID doesn't match given user ID."), 401)
-        response.headers['Content-Type'] = 'application/json'
-        return response
-
-    # Verify that the access token is valid for this app.
-    if result['issued_to'] != CLIENT_ID:
-        response = flask.make_response(
-            json.dumps("Token's client ID does not match app's."), 401)
-        print "Token's client ID does not match app's."
-        response.headers['Content-Type'] = 'application/json'
-        return response
-
-    stored_credentials = flask.session.get('credentials')
-    stored_gplus_id = flask.session.get('gplus_id')
-    if stored_credentials is not None and gplus_id == stored_gplus_id:
-        response = flask.make_response(json.dumps('Current user is already connected.'), 200)
-        response.headers['Content-Type'] = 'application/json'
-        return response
-
-    # Store the access token in the session for later use.
-    flask.session['credentials'] = credentials.access_token
-    flask.session['gplus_id'] = gplus_id
-
-    # Get user info
-    userinfo_url = "https://www.googleapis.com/oauth2/v1/userinfo"
-    params = {'access_token': credentials.access_token, 'alt': 'json'}
-    answer = requests.get(userinfo_url, params=params)
-
-    data = answer.json()
-
-    flask.session['username'] = data['name']
-    flask.session['picture'] = data['picture']
-    flask.session['email'] = data['email']
-
-    output = ''
-    output += '<h1>Welcome, '
-    output += flask.session['username']
-    output += '!</h1>'
-    output += '<img src="'
-    output += flask.session['picture']
-    output += ' " style = "width: 300px; height: 300px;border-radius: 150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
-    flask.flash("you are now logged in as %s" % flask.session['username'])
-    print "done!"
-    return output
+def set_session_token():
+    session_token = ''.join(random.choice(string.ascii_uppercase + string.digits)
+                                       for x in xrange(32))
+    flask.session['session_token'] = session_token
+    return session_token
 
 
 @app.route('/fbconnect', methods=['POST'])
 def fbconnect():
-    if flask.request.args.get('state') != flask.session['state']:
-        response = flask.make_response(json.dumps('Invalid state parameter.'), 401)
-        response.headers['Content-Type'] = 'application/json'
-        return response
-    access_token = flask.request.data
-    print "access token received %s " % access_token
+    # Check that Flask session_token parameter matches the one originally sent
+    # to Facebook
+    fb_returned_session_token = flask.request.args.get('state')
+    verify_session_token(fb_returned_session_token)
 
+    # Exchange for long-lived access token
+    short_lived_access_token = flask.request.data
+    long_lived_access_token = exchange_fb_token(short_lived_access_token,
+                                                FB_TOKEN_EXCHANGE_URL)
+
+    # Get FB user data; if email doesn't exist, add user
+    fb_user_data = get_fb_user_data(long_lived_access_token,
+                                    FB_USER_QUERY_URL)
+    user_id = add_or_verify_user(fb_user_data)
+
+    if user_id:
+        flask.session['facebook_id'] = fb_user_data['id']
+        flask.session['access_token'] = long_lived_access_token
+        return ('Login successful.', 200)
+    else:
+        return ('Failed to login.', 401)
+
+
+def verify_session_token(returned_session_token):
+    """Verify that session token parameter sent to 3rd party oauth service 
+    matches current session token."""
+    flask_session_token = flask.session.get('session_token')
+
+    if returned_session_token != flask_session_token:
+        return ('Invalid oauth session token parameter.', 401)
+
+
+def load_fb_app_data():
     app_id = json.loads(open('fb_client_secrets.json', 'r').read())[
         'web']['app_id']
     app_secret = json.loads(
         open('fb_client_secrets.json', 'r').read())['web']['app_secret']
-    url = 'https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=%s&client_secret=%s&fb_exchange_token=%s' % (
-        app_id, app_secret, access_token)
-    h = httplib2.Http()
-    result = h.request(url, 'GET')[1]
+    return app_id, app_secret
 
-    # Use token to get user info from API
-    userinfo_url = "https://graph.facebook.com/v2.4/me"
-    # strip expire tag from access token
-    token = result.split("&")[0]
 
-    url = 'https://graph.facebook.com/v2.4/me?%s&fields=name,id,email' % token
-    h = httplib2.Http()
-    result = h.request(url, 'GET')[1]
-    # print "url sent for API access:%s"% url
-    # print "API JSON result: %s" % result
-    data = json.loads(result)
-    flask.session['provider'] = 'facebook'
-    flask.session['username'] = data["name"]
-    flask.session['email'] = data["email"]
-    flask.session['facebook_id'] = data["id"]
+def exchange_fb_token(short_lived_access_token, FB_TOKEN_EXCHANGE_URL):
+    """Exchange short-lived access token for long-lived one."""
+    app_id, app_secret = load_fb_app_data()
+    fb_token_exchange_params = {
+        'grant_type': 'fb_exchange_token',
+        'client_id': app_id,
+        'client_secret': app_secret,
+        'fb_exchange_token': short_lived_access_token
+    }
+    fb_token_exchange_result = requests.get(FB_TOKEN_EXCHANGE_URL,
+                                            params=fb_token_exchange_params)
+    fb_token_exchange_result_dict = urlparse.parse_qs(fb_token_exchange_result.text)
+    long_lived_access_token = fb_token_exchange_result_dict.get('access_token')
+    return long_lived_access_token
 
-    # The token must be stored in the login_session in order to properly logout, let's strip out the information before the equals sign in our token
-    stored_token = token.split("=")[1]
-    flask.session['access_token'] = stored_token
 
-    # Get user picture
-    url = 'https://graph.facebook.com/v2.4/me/picture?%s&redirect=0&height=200&width=200' % token
-    h = httplib2.Http()
-    result = h.request(url, 'GET')[1]
-    data = json.loads(result)
+def get_fb_user_data(long_lived_access_token, FB_USER_QUERY_URL):
+    """Using long-lived access token, query Facebook Graph API for user data."""
+    fb_user_query_params = {
+        'fields': 'name,id,email',
+        'access_token': long_lived_access_token
+    }
+    fb_user_query_result = requests.get(FB_USER_QUERY_URL,
+                                        params=fb_user_query_params)
+    fb_user_data = json.loads(fb_user_query_result.text)
 
-    flask.session['picture'] = data["data"]["url"]
+    return fb_user_data
 
-    # see if user exists
-    user_id = getUserID(flask.session['email'])
+
+def add_or_verify_user(user_data):
+    user_id = get_user_id_by_email(user_data['email'])
     if not user_id:
-        user_id = createUser(flask.session)
+        user_id = create_user(user_data)
     flask.session['user_id'] = user_id
-
-    output = ''
-    output += '<h1>Welcome, '
-    output += flask.session['username']
-
-    output += '!</h1>'
-    output += '<img src="'
-    output += flask.session['picture']
-    output += ' " style = "width: 300px; height: 300px;border-radius: 150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
-
-    flask.flash("Now logged in as %s" % flask.session['username'])
-    return output
+    return user_id
 
 
 @app.route('/fbdisconnect')
 def fbdisconnect():
     facebook_id = flask.session['facebook_id']
-    # The access token must me included to successfully logout
     access_token = flask.session['access_token']
-    url = 'https://graph.facebook.com/%s/permissions?access_token=%s' % (facebook_id, access_token)
-    h = httplib2.Http()
-    result = h.request(url, 'DELETE')[1]
-    return "you have been logged out"
+
+    logout_params = {
+        'access_token': access_token
+    }
+
+    fb_logout_url = 'https://graph.facebook.com/%s/permissions' % facebook_id
+    logout_result = requests.delete(fb_logout_url,
+                                    params=logout_params)
+    flask.session.clear()
+    return flask.redirect('/')
 
 
-def createUser(session):
-    newUser = User(name=session['username'], email=session[
-                   'email'], picture=session['picture'])
-    db_session.add(newUser)
-    db_session.commit()
-    user = db_session.query(User).filter_by(email=session['email']).one()
+def create_user(user_data):
+    user = User(
+        name=user_data['username'],
+        email=user_data['email'],
+        picture=user_data['data']['url']
+        )
+    try:
+        db_session.add(user)
+        db_session.commit()
+    except sqlalchemy.ext.SQLAlchemyError:
+        db_session.rollback()
+        # TODO redirect and add error message
+    user = db_session.query(User).filter_by(email=user_data['email']).one()
     return user.id
 
 
-def getUserInfo(user_id):
+def get_user(user_id):
     user = db_session.query(User).filter_by(id=user_id).one()
     return user
 
 
-def getUserID(email):
+def get_user_id_by_email(email):
     try:
         user = db_session.query(User).filter_by(email=email).one()
         return user.id
