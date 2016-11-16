@@ -194,6 +194,7 @@ def monsters():
 
 @app.route('/signin')
 def sign_in():
+<<<<<<< b28f74a4354e41e6e191aac3fcb21875904c1049
     if 'user_id' not in flask.session:
         session_token = set_session_token()
         return flask.render_template('signup.html',
@@ -207,6 +208,19 @@ def set_session_token():
                                        for x in xrange(32))
     flask.session['session_token'] = session_token
     return session_token
+    if 'user_id' not in flask.session:
+        state = set_state()
+        return flask.render_template('signup.html',
+                                     state=state)
+    else:
+        return flask.redirect('/')
+
+
+def set_state():
+    state = ''.join(random.choice(string.ascii_uppercase + string.digits)
+                    for x in xrange(32))
+    flask.session['state'] = state
+    return state
 
 
 @app.route('/fbconnect', methods=['POST'])
@@ -242,6 +256,38 @@ def verify_session_token(returned_session_token):
     if returned_session_token != flask_session_token:
         return ('Invalid oauth session token parameter.', 401)
 
+    # Check that local state parameter matches the one sent to Facebook
+    fb_returned_state = flask.request.args.get('state')
+    check_state_parameter(fb_returned_state)
+
+    # Exchange for long-lived access token
+    short_lived_access_token = flask.request.data
+    long_lived_access_token = exchange_fb_token(short_lived_access_token)
+
+    # Get FB user data; if email doesn't exist, add user
+    fb_user_data = get_fb_user_data(long_lived_access_token)
+    user_id = add_or_verify_user(fb_user_data)
+
+    if user_id:
+        print fb_user_data['id']
+        flask.session['facebook_id'] = fb_user_data['id']
+        flask.session['access_token'] = long_lived_access_token
+        print flask.session
+        success_message = 'Login successful.'
+        return (success_message, 200)
+    else:
+        fail_message = 'Failed to login.'
+        return (fail_message, 401)
+
+
+def check_state_parameter(returned_state):
+    flask_state = flask.session['state']
+
+    if returned_state != flask_state:
+        bad_state_response = flask.jsonify('Invalid state parameter.')
+        bad_state_response.status_code = 401
+        return bad_state_response
+
 
 def load_fb_app_data():
     app_id = json.loads(open('fb_client_secrets.json', 'r').read())[
@@ -260,6 +306,7 @@ def exchange_fb_token(short_lived_access_token, FB_TOKEN_EXCHANGE_URL):
         'client_secret': app_secret,
         'fb_exchange_token': short_lived_access_token
     }
+
     fb_token_exchange_result = requests.get(FB_TOKEN_EXCHANGE_URL,
                                             params=fb_token_exchange_params)
     fb_token_exchange_result_dict = urlparse.parse_qs(fb_token_exchange_result.text)
@@ -273,7 +320,7 @@ def get_fb_user_data(long_lived_access_token, FB_USER_QUERY_URL):
         'fields': 'name,id,email',
         'access_token': long_lived_access_token
     }
-    fb_user_query_result = requests.get(FB_USER_QUERY_URL,
+    fb_user_query_result = requests.get(fb_user_query_url,
                                         params=fb_user_query_params)
     fb_user_data = json.loads(fb_user_query_result.text)
 
