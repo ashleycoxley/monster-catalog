@@ -3,6 +3,14 @@
 
 <script src="{{url_for('static', filename='monsterSort.js')}}"></script>
 <div class='container-fluid monster-display-grid'>
+	<div id='login-success' class="alert alert-success text-center hide">
+  		<strong>Success!</strong> You are now logged in.
+  		<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+	</div>
+	<div  id='login-fail' class="alert alert-danger text-center hide">
+  		<strong>Login failed.</strong> Please try again.
+  		<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+	</div>
 	<div class='row'>
 		<div class='col-md-12'>
 			<form id='monster-sort' class='form'>
