@@ -12,7 +12,7 @@
                 <fb:login-button scope='public_profile,email' onlogin='facebookLogin();' data-size='large'>
                 </fb:login-button>
             </div>
-<!--             <div id="google-login">
+            <div id="google-login">
                 <span class="g-signin"
                     data-scope="openid email"
                     data-clientid='478230017741-rd1hon3dcgt9eoutdkjd5lsiidat2gp5.apps.googleusercontent.com'
@@ -22,44 +22,47 @@
                     data-callback="googleSignInCallback"
                     data-approvalprompt="force">
                 </span>
-            </div> -->
+            </div>
         </div>
     </div>  
 </div>
 
 <script>
-// function googleSignInCallback(authResult) {
-//   if (authResult['code']) {
-//     // Hide the sign-in button now that the user is authorized
-//     $('#google-login').attr('style', 'display: none');
-//     // Send the one-time-use code to the server, if the server responds, write a 'login successful' 
-//     // message to the web page and then redirect back to the main restaurants page
-//     $.ajax({
-//       type: 'POST',
-//       url: '/gconnect?state={{STATE}}',
-//       processData: false,
-//       data: authResult['code'],
-//       contentType: 'application/octet-stream; charset=utf-8',
-//       success: function(result) {
-//         // Handle or verify the server response if necessary.
-//         if (result) {
-//           $('#login-result').html('Login Successful!</br>'+ result + '</br>Redirecting...');
-//          setTimeout(function() {
-//           window.location.href = "/";
-//          }, 4000);
-          
-//       } else if (authResult['error']) {
-//     console.log('There was an error: ' + authResult['error']);
-//   } else {
-//         $('#login-result').html('Failed to make a server-side call. Check your configuration and console.');
-//          }
-//       }
-      
-//   }); } }
-// </script>
+    function loginSuccess() {
+        $('#login-alert').empty();
+        $('#login-alert').append(
+            "<strong>Success!</strong> You are now logged in. Redirecting..."
+        );
+        $('#login-alert').addClass('alert-success');
+        $('#login-alert').removeClass('hide');
+        setTimeout(function() {
+            window.location.href = "/";
+        }, 2000);
+    }
 
+    function loginFailure() {
+        $('#login-alert').empty();
+        $('#login-alert').append(
+            "<strong>Login failed.</strong> Please try again."
+        );
+        $('#login-alert').addClass('alert-danger');
+        $('#login-alert').removeClass('hide');
+    }
 
-<script>
+    function googleSignInCallback(authResult) {
+        if (authResult['code']) {
+            $.ajax({
+                type: 'POST',
+                url: '/gconnect?state={{session_token}}',
+                processData: false,
+                data: authResult['code'],
+                contentType: 'application/octet-stream; charset=utf-8',
+                success: loginSuccess,
+                error: loginFailure
+            }); 
+        }
+    }
+
     // Facebook JS SDK https://developers.facebook.com/docs/javascript
     window.fbAsyncInit = function() {
         FB.init({
@@ -87,23 +90,8 @@
                 processData: false,
                 data: access_token,
                 contentType: 'application/octet-stream; charset=utf-8',
-                success: function() {
-                    $('#login-alert').append(
-                        "<strong>Success!</strong> You are now logged in. Redirecting..."
-                    );
-                    $('#login-alert').addClass('alert-success');
-                    $('#login-alert').removeClass('hide');
-                    setTimeout(function() {
-                        window.location.href = "/";
-                    }, 2000);
-                },
-                error: function() {
-                    $('#login-alert').append(
-                        "<strong>Login failed.</strong> Please try again."
-                    );
-                    $('#login-alert').addClass('alert-danger');
-                    $('#login-alert').removeClass('hide');
-                }
+                success: loginSuccess,
+                error: loginFailure
             });
         });
     };
