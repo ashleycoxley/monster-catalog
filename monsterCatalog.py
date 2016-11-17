@@ -13,6 +13,9 @@ import urlparse
 import sqlalchemy
 from models import Base, User, Monster
 
+from oauth2client.client import flow_from_clientsecrets
+from oauth2client.client import FlowExchangeError
+
 
 CLIENT_ID = json.loads(
     open('client_secret_478230017741-rd1hon3dcgt9eoutdkjd5lsiidat2gp5.apps.googleusercontent.com.json', 'r').read())['web']['client_id']
@@ -21,6 +24,9 @@ APPLICATION_NAME = "Monster Catalog"
 FB_TOKEN_EXCHANGE_URL = 'https://graph.facebook.com/oauth/access_token'
 FB_USER_QUERY_URL = 'https://graph.facebook.com/v2.4/me'
 
+GOOGLE_SECRETS_FILE = 'client_secret_478230017741-rd1hon3dcgt9eoutdkjd5lsiidat2gp5.apps.googleusercontent.com.json'
+GOOGLE_VERIFY_TOKEN_URL = 'https://www.googleapis.com/oauth2/v1/tokeninfo'
+GOOGLE_USER_QUERY_URL = 'https://www.googleapis.com/oauth2/v1/userinfo'
 
 app = flask.Flask(__name__)
 
@@ -238,6 +244,7 @@ def fbconnect():
     # Get FB user data; if email doesn't exist, add user
     fb_user_data = get_fb_user_data(long_lived_access_token,
                                     FB_USER_QUERY_URL)
+
     user_id = add_or_verify_user(fb_user_data)
 
     if user_id:
@@ -248,8 +255,85 @@ def fbconnect():
         return ('Failed to login.', 401)
 
 
+@app.route('/gconnect', methods=['POST'])
+def gconnect():
+    # Check that Flask session_token parameter matches the one originally sent
+    # to Google
+    g_returned_session_token = flask.request.args.get('state')
+    verify_session_token(g_returned_session_token)
+
+    short_lived_access_token = flask.request.data
+
+    # Exchange for long-lived access token
+    try:
+        google_credentials = exchange_g_token(short_lived_access_token,
+                                              GOOGLE_SECRETS_FILE)
+    except FlowExchangeError:
+        return ('Authorization failed.', 401)
+
+    long_lived_access_token = google_credentials.access_token
+    google_id = verify_google_token(long_lived_access_token,
+                                    google_credentials,
+                                    GOOGLE_VERIFY_TOKEN_URL)
+
+    # Get Google user data; if email doesn't exist, add user
+    google_user_data = get_google_user_data(long_lived_access_token,
+                                            GOOGLE_USER_QUERY_URL)
+    user_id = add_or_verify_user(google_user_data)
+
+    if user_id:
+        flask.session['google_id'] = google_id
+        flask.session['access_token'] = long_lived_access_token
+        return ('Login successful.', 200)
+    else:
+        return ('Failed to login.', 401)
+
+
+def exchange_g_token(short_lived_access_token, GOOGLE_SECRETS_FILE):
+    oauth_flow = flow_from_clientsecrets(GOOGLE_SECRETS_FILE, scope='')
+    oauth_flow.redirect_uri = 'postmessage'
+    credentials = oauth_flow.step2_exchange(short_lived_access_token)
+    return credentials
+
+
+def verify_google_token(long_lived_access_token, google_credentials,
+                        GOOGLE_VERIFY_TOKEN_URL):
+    verify_token_params = {
+        'access_token': long_lived_access_token
+    }
+    verify_google_token_result = requests.get(GOOGLE_VERIFY_TOKEN_URL,
+                                              params=verify_token_params)
+
+    # Verify that token valid with Google
+    verify_google_token_result_dict = verify_google_token_result.json()
+    if verify_google_token_result.status_code != 200:
+        return ('Google token invalid', 401)
+
+    # Verify access token valid for this user
+    google_id = google_credentials.id_token['sub']
+    if verify_google_token_result_dict['user_id'] != google_id:
+        return ("Token's user ID doesn't match given user ID", 401)
+
+    # Verify access token valid for this app
+    if verify_google_token_result_dict['issued_to'] != CLIENT_ID:
+        return ("Token's client ID does not match app's", 401)
+
+    return google_id
+
+
+def get_google_user_data(long_lived_access_token, GOOGLE_USER_QUERY_URL):
+    google_user_data_params = {
+        'access_token': long_lived_access_token,
+        'alt': 'json'
+    }
+    google_user_data_response = requests.get(GOOGLE_USER_QUERY_URL,
+                                             params=google_user_data_params)
+    return google_user_data_response.json()
+
+
+
 def verify_session_token(returned_session_token):
-    """Verify that session token parameter sent to 3rd party oauth service 
+    """Verify that session token parameter sent to 3rd party oauth service
     matches current session token."""
     flask_session_token = flask.session.get('session_token')
 
@@ -317,18 +401,26 @@ def exchange_fb_token(short_lived_access_token, FB_TOKEN_EXCHANGE_URL):
 def get_fb_user_data(long_lived_access_token, FB_USER_QUERY_URL):
     """Using long-lived access token, query Facebook Graph API for user data."""
     fb_user_query_params = {
-        'fields': 'name,id,email',
+        'fields': 'name,id,email,picture',
         'access_token': long_lived_access_token
     }
     fb_user_query_result = requests.get(fb_user_query_url,
                                         params=fb_user_query_params)
     fb_user_data = json.loads(fb_user_query_result.text)
 
-    return fb_user_data
+    return standardize_fb_user_data(fb_user_data)
+
+
+def standardize_fb_user_data(user_data):
+    """Un-nest the picture url string in Facebook user data so that user_data
+    object matches the user_data object returned from Google."""
+    user_data['picture'] = user_data['picture']['data']['url']
+    return user_data
 
 
 def add_or_verify_user(user_data):
     user_id = get_user_id_by_email(user_data['email'])
+    user = get_user(user_id)
     if not user_id:
         user_id = create_user(user_data)
     flask.session['user_id'] = user_id
@@ -353,15 +445,16 @@ def fbdisconnect():
 
 def create_user(user_data):
     user = User(
-        name=user_data['username'],
+        name=user_data['name'],
         email=user_data['email'],
-        picture=user_data['data']['url']
+        picture=user_data['picture']
         )
     try:
         db_session.add(user)
         db_session.commit()
     except sqlalchemy.ext.SQLAlchemyError:
         db_session.rollback()
+        return ('User database error', 401)
         # TODO redirect and add error message
     user = db_session.query(User).filter_by(email=user_data['email']).one()
     return user.id
