@@ -29,9 +29,7 @@
 
 <script>
     function loginSuccess() {
-        console.log('success fired')
         $('#login-alert').empty();
-        console.log('#login-alert');
         $('#login-alert').append(
             "<strong>Success!</strong> You are now logged in. Redirecting..."
         );
@@ -43,7 +41,6 @@
     }
 
     function loginFailure() {
-        console.log('failure fired')
         $('#login-alert').empty();
         $('#login-alert').append(
             "<strong>Login failed.</strong> Please try again."
