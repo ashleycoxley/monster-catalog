@@ -1,5 +1,4 @@
 import flask
-import httplib2
 import json
 import requests
 import random
@@ -23,10 +22,12 @@ APPLICATION_NAME = "Monster Catalog"
 
 FB_TOKEN_EXCHANGE_URL = 'https://graph.facebook.com/oauth/access_token'
 FB_USER_QUERY_URL = 'https://graph.facebook.com/v2.4/me'
+FB_LOGOUT_URL = 'https://graph.facebook.com/%s/permissions'
 
 GOOGLE_SECRETS_FILE = 'client_secret_478230017741-rd1hon3dcgt9eoutdkjd5lsiidat2gp5.apps.googleusercontent.com.json'
 GOOGLE_VERIFY_TOKEN_URL = 'https://www.googleapis.com/oauth2/v1/tokeninfo'
 GOOGLE_USER_QUERY_URL = 'https://www.googleapis.com/oauth2/v1/userinfo'
+GOOGLE_LOGOUT_URL = 'https://accounts.google.com/o/oauth2/revoke'
 
 app = flask.Flask(__name__)
 
@@ -420,26 +421,34 @@ def standardize_fb_user_data(user_data):
 
 def add_or_verify_user(user_data):
     user_id = get_user_id_by_email(user_data['email'])
-    user = get_user(user_id)
     if not user_id:
         user_id = create_user(user_data)
     flask.session['user_id'] = user_id
     return user_id
 
 
-@app.route('/fbdisconnect')
-def fbdisconnect():
-    facebook_id = flask.session['facebook_id']
+@app.route('/logout')
+def logout():
+    facebook_id = flask.session.get('facebook_id')
+    google_id = flask.session.get('google_id')
     access_token = flask.session['access_token']
 
-    logout_params = {
-        'access_token': access_token
-    }
-
-    fb_logout_url = 'https://graph.facebook.com/%s/permissions' % facebook_id
-    logout_result = requests.delete(fb_logout_url,
-                                    params=logout_params)
+    if facebook_id:
+        user_logout_query_url = FB_LOGOUT_URL % facebook_id
+        logout_params = {
+            'access_token': access_token
+        }
+        logout_result = requests.delete(user_logout_query_url,
+                                        params=logout_params)
+    elif google_id:
+        user_logout_query_url = GOOGLE_LOGOUT_URL
+        logout_params = {
+            'token': access_token
+        }
+        logout_result = requests.get(user_logout_query_url,
+                                     params=logout_params)
     flask.session.clear()
+    # TODO add success message to template
     return flask.redirect('/')
 
 
