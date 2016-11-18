@@ -117,7 +117,6 @@ $(document).ready(function(e) {
 
         // Redirect to main page once submitted
         postData.done(function(response) {
-            console.log(response);
             if (response['result'] === 'success') {
                 window.location.href = '/';
             } else {
