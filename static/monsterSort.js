@@ -5,12 +5,8 @@ $(document).ready(function() {
 			$('.monster-box').show();
 		} else {
 			var selector = '.' + selection;
-			if ($(selector)[0]) {
-				$(selector).show();
-				$(selector).siblings().hide();
-			} else {
-				$('.monster-box').hide();
-			}
+			$('.monster-box').hide();
+			$('.monster-box').filter(selector).show();
 		}
 	});
 });
