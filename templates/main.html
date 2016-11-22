@@ -4,6 +4,13 @@
 <script src="{{url_for('static', filename='monsterSort.js')}}"></script>
 <div class='container monster-display-grid'>
     <div class='row'>
+        <div class='col-sm-12'>
+            <div id='mainpage-alert' class="alert text-center {{alert_class}}">
+                {{alert_text}}
+            </div>
+        </div>
+    </div>
+    <div class='row'>
         <div class='col-md-4 text-left'>
             <form id='monster-sort' class='form sort-dropdown'>
                 <select class='form-control' name='monster-sort'>
@@ -35,7 +42,9 @@
             {% if monster.creator == user_id %}
             <div class='card-block'>
                 <a href='/edit/{{monster.id}}' class='btn btn-default'>Edit</a>
-                <input type='submit' class='btn btn-default' value='Delete'>
+                <form action='/delete/{{monster.id}}' method='post'>
+                    <input type='submit' class='btn btn-default' value='Delete'>
+                </form>
             </div>
             {% endif %}
         </div>

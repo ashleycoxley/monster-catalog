@@ -26,6 +26,10 @@
 }
 
 /*MAIN PAGE*/
+#mainpage-alert {
+	text-align: center;
+}
+
 .sort-dropdown {
 	margin-top: 15px;
 }

@@ -1,0 +1,25 @@
+{
+	"messages": {
+		"monster_add": {
+			"alert-success": "Your monster has been succesfully added.",
+			"alert-danger": "There was an error adding your monster. Try again later."
+		},
+		"monster_edit": {
+			"alert-success": "Your monster has been successfully edited.",
+			"alert-danger": "There was an error editing your monster. Try again later."
+		},
+		"monster_delete": {
+			"alert-success": "Your monster has been deleted.",
+			"alert-danger": "There was an error deleting your monster. Try again later."
+		},
+		"user_authorization": {
+			"alert-danger": "Sorry, you're not authorized to modify that monster."
+		},
+		"user_login": {
+			"alert-danger": "You must be logged in to create, edit, or delete monsters."
+		},
+		"monster_lookup": {
+			"alert-danger": "Sorry, that monster doesn't exist."
+		}
+	}
+}

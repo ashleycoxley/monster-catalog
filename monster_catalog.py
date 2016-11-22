@@ -1,5 +1,6 @@
 import flask
 import sqlalchemy
+import json
 
 from models import Base, Monster
 import monster_input
@@ -15,20 +16,31 @@ Base.metadata.bind = engine
 DBSession = sqlalchemy.orm.sessionmaker(bind=engine)
 db_session = DBSession()
 
+with open('user_messages.json') as message_file:
+    user_messages = json.load(message_file)
+
 
 @app.route('/')
 def main_page():
     user_id = flask.session.get('user_id')
     monsters = db_session.query(Monster).limit(20).all()
+    action = flask.request.args.get('action')
+    result = flask.request.args.get('result')
+    if action:
+        alert_text = user_messages['messages'][action].get(result)
+    else:
+        alert_text = ''
     return flask.render_template('main.html',
                                  monsters=monsters,
-                                 user_id=user_id)
+                                 user_id=user_id,
+                                 alert_class=result,
+                                 alert_text=alert_text)
 
 
 @app.route('/create', methods=['GET', 'POST'])
 def create():
     if 'user_id' not in flask.session:
-        return flask.redirect('/signin')
+        return flask.redirect('/signin?action=user_login&result=alert-danger')
 
     if flask.request.method == 'GET':
         return flask.render_template('create.html',
@@ -54,10 +66,17 @@ def create():
 @app.route('/edit/<int:monster_id>', methods=['GET', 'POST'])
 def edit_monster(monster_id):
     if 'user_id' not in flask.session:
-        return flask.redirect('/signin')
+        return flask.redirect('/signin?action=user_login&result=alert-danger')
 
-    monster = database_operations.authorize_monster_change(monster_id,
-                                                           db_session)
+    monster_auth_result = database_operations.authorize_monster_change(monster_id,
+                                                                       db_session)
+
+    # Check for error response
+    if type(monster_auth_result) != Monster:
+        return monster_auth_result
+    else:
+        monster = monster_auth_result
+
     if flask.request.method == 'GET':
         return flask.render_template('create.html',
                                      name=monster.name,
@@ -78,28 +97,34 @@ def edit_monster(monster_id):
 @app.route('/delete/<int:monster_id>', methods=['POST'])
 def delete_monster(monster_id):
     if 'user_id' not in flask.session:
-        return flask.redirect('/signin')
-
+        return flask.redirect('/signin?action=user_login&result=alert-danger')
     monster = database_operations.authorize_monster_change(monster_id,
                                                            db_session)
+
     try:
         db_session.delete(monster)
         db_session.commit()
-        # TODO add success message here in template
-        return flask.redirect('/')
+        return flask.redirect('/?action=monster_delete&result=alert-success')
 
     except sqlalchemy.exc.SQLAlchemyError as e:
         db_session.rollback()
-        # TODO add error message here in template
-        return flask.redirect('/')
+        return flask.redirect('/?action=monster_delete&result=alert-danger')
 
 
 @app.route('/signin')
 def sign_in():
     if 'user_id' not in flask.session:
+        action = flask.request.args.get('action')
+        result = flask.request.args.get('result')
+        if action:
+            alert_text = user_messages['messages'][action].get(result)
+        else:
+            alert_text = ''
         session_token = login.set_session_token()
         return flask.render_template('signup.html',
-                                     session_token=session_token)
+                                     session_token=session_token,
+                                     alert_class=result,
+                                     alert_text=alert_text)
     else:
         # If user is logged in, return to main page
         return flask.redirect('/')

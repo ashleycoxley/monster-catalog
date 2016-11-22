@@ -116,13 +116,25 @@ $(document).ready(function(e) {
 
         var postData = $.post(addMonsterUrl, data);
 
-        // Redirect to main page once submitted
+        // Redirect to main page with message once submitted
         postData.done(function(response) {
             if (response['result'] === 'success') {
-                window.location.href = '/';
+                if (response['insert_or_update'] === 'insert') {
+                    window.location.href = '/?action=monster_add&result=alert-success';
+                } else if (response['insert_or_update'] === 'update') {
+                    window.location.href = '/?action=monster_edit&result=alert-success';
+                } else {
+                    window.location.href = '/';
+                }
+                
             } else {
-                // TODO better error handling here
-                console.log('error');
+                if (response['insert_or_update'] === 'insert') {
+                    window.location.href = '/?action=monster_add&result=alert-danger';
+                } else if (response['insert_or_update'] === 'update') {
+                    window.location.href = '/?action=monster_edit&result=alert-danger';
+                } else {
+                    window.location.href = '/';
+                }
             }
         });
 

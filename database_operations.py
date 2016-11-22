@@ -44,7 +44,7 @@ def create_monster(monster_data, db_session):
                       intentions=monster_data['intentions'],
                       created_date=datetime.datetime.now()
                       )
-    create_response = insert_update_monster(monster, db_session)
+    create_response = insert_update_monster(monster, db_session, 'insert')
     return create_response
 
 
@@ -57,32 +57,42 @@ def modify_monster(monster, monster_data, db_session):
     monster.intentions = monster_data['intentions']
     monster.edited_date = datetime.datetime.now()
 
-    edit_response = insert_update_monster(monster, db_session)
+    edit_response = insert_update_monster(monster, db_session, 'update')
     return edit_response
 
 
-def insert_update_monster(monster, db_session):
-    """Add or update database with a monster object."""
+def insert_update_monster(monster, db_session, insert_or_update):
+    """Add or update database with a monster object. Returns a JSON response to
+    be handled on the client side."""
     try:
         db_session.add(monster)
         db_session.commit()
-        return flask.jsonify({'result': 'success'})
+        return flask.jsonify({
+            'result': 'success',
+            'insert_or_update': insert_or_update
+        })
+
     except sqlalchemy.exc.SQLAlchemyError as e:
         db_session.rollback()
-        # Add error message here in template
-        return flask.jsonify({'result': 'fail'})
+        return flask.jsonify({
+            'result': 'fail',
+            'insert_or_update': insert_or_update
+        })
 
 
 def authorize_monster_change(monster_id, db_session):
     """Verify that user requesting to edit or delete a monster is the
     creator of that monster."""
-    monster = db_session.query(Monster).filter_by(id=monster_id).one()
+    try:
+        monster = db_session.query(Monster).filter_by(id=monster_id).one()
+    except sqlalchemy.orm.exc.NoResultFound:
+        return flask.redirect('/?action=monster_lookup&result=alert-danger')
+
     current_user_id = flask.session.get('user_id')
-    if monster is None:
-        flask.redirect('/')
     if current_user_id is None:
-        flask.redirect('/signin')
+        return flask.redirect('/signin?action=user_login&result=alert-danger')
+
     if current_user_id != monster.creator:
-         # Add error message here
-        flask.redirect('/')
+        return flask.redirect('/?action=user_authorization&result=alert-danger')
+
     return monster
