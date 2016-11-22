@@ -23,9 +23,9 @@ function draw(x, y, context, pencilColor) {
 function checkIfEmpty(field) {
     var value = field.val();
     if (!value) {
-        field.closest('.form-group').addClass('has-error');
+        field.closest('.form-group').addClass('has-danger');
     } else {
-        field.closest('.form-group').removeClass('has-error');
+        field.closest('.form-group').removeClass('has-danger');
         return value;
     }
 }
@@ -48,6 +48,7 @@ $(document).ready(function(e) {
 
     $('.pencil-color').click(function(){
         pencilColor = $(this).css('backgroundColor');
+        $('.fa-pencil').css('color', pencilColor);
     });
 
     $('#clear-canvas').click(function(e) {

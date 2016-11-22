@@ -1,23 +1,56 @@
+/*GENERAL*/
+.header-container {
+	margin-top: 20px;
+}
+
+.header-link {
+	color: black;
+}
+
+.header-link:hover {
+	text-decoration: none;
+	color: black;
+}
+
+.login-header {
+	text-align: right;
+	font-size: smaller;
+}
+
+.create-button-box {
+	text-align: right;
+}
+
+.header-row {
+	margin-top: 20px;
+}
+
 /*MAIN PAGE*/
-.monster-name-box {
-	border-radius: 10px;
+.sort-dropdown {
+	margin-top: 15px;
 }
 
-.good > .monster-name-box {
-	background-color: #c0ca55;
+.card-columns {
+	margin-top: 30px;
 }
 
-.evil > .monster-name-box {
-	background-color: #f07c6c;
+.card-img-top {
+	width: 100%;
+	height: auto;
 }
 
-.conflicted > .monster-name-box {
-	background-color: #ad5472;
+.monster-card {
+	min-width: 200px;
 }
 
-.intentions-tag {
-	font-weight: bold;
-	opacity: 0.7;
+
+/*CREATE PAGE*/
+#monster-create {
+	margin-top: 30px;
+}
+
+.monster-text-input {
+	margin-top: 20px;
 }
 
 /* MONSTER DRAWING*/
@@ -34,6 +67,8 @@
 
 #monster-canvas {
 	cursor: crosshair;
+	border: 1px solid #cccccc;
+	border-radius: 4px;
 }
 
 .purple {
@@ -41,15 +76,19 @@
 }
 
 .blue {
-	background-color: #0074d9;
+	background-color: #00ccff;
 }
 
 .green {
-	background-color: #0f9a56;
+	background-color: #00e02e;
 }
 
-.yellow {
-	background-color: #fedc32;
+.darkgreen {
+	background-color: #006B1B;
+}
+
+.pink {
+	background-color: #E80C60;
 }
 
 .red {
@@ -57,7 +96,11 @@
 }
 
 .orange {
-	background-color: #ff7f00;
+	background-color: #FF6F0D;
+}
+
+.brown {
+	background-color: #a33426;
 }
 
 .black {
@@ -68,12 +111,77 @@
 	background-color: white;
 }
 
+.draw-control-panel {
+	text-align: center;
+}
+
 .pencil-color-choice {
-	height: 15px;
+	height: 100%;
 }
 
 .pencil-color {
-	height: 100%;
-	margin: 5px;
+	height: 20px;
+	width: 20px;
+	margin-top: 5px;
+	border-radius: 50%;
 	border: 1px solid black;
+	margin-right: auto;
+	margin-left: auto;
+}
+
+.fa-pencil-box {
+	font-size: 26px;
+}
+
+.clear-button-container {
+	font-size: 11px;
+	margin-top: 15px;
+	text-align: center;
+}
+
+
+/*LOGIN PAGE*/
+#facebook-login {
+	width: 75px;
+}
+
+#google-login {
+	margin-top: 15px;
+	width: 115px;
+}
+
+.social-login-box {
+	margin-left: auto;
+	margin-right: auto;
+}
+
+#login-alert {
+	text-align: center;
+}
+
+@media (min-width: 20em) {
+    .card-columns {
+        -webkit-column-count: 1;
+        -moz-column-count: 1;
+        -ms-column-count: 1;
+        column-count: 1;
+    }
+}
+
+@media (min-width: 40em) {
+    .card-columns {
+        -webkit-column-count: 2;
+        -moz-column-count: 2;
+        -ms-column-count: 2;
+        column-count: 2;
+    }
+}
+
+@media (min-width: 68em) {
+    .card-columns {
+        -webkit-column-count: 3;
+        -moz-column-count: 3;
+        -ms-column-count: 3;
+        column-count: 3;
+    }
 }

@@ -2,11 +2,11 @@ $(document).ready(function() {
 	$('select').change(function() {
 		selection = $(this).val();
 		if (selection == 'all') {
-			$('.monster-box').show();
+			$('.monster-card').show();
 		} else {
 			var selector = '.' + selection;
-			$('.monster-box').hide();
-			$('.monster-box').filter(selector).show();
+			$('.monster-card').hide();
+			$('.monster-card').filter(selector).show();
 		}
 	});
 });

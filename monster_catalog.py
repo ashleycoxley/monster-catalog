@@ -32,10 +32,21 @@ def create():
 
     if flask.request.method == 'GET':
         return flask.render_template('create.html',
-                                     submit_button_text='CREATE A MONSTER')
+                                     submit_button_text='CREATE A MONSTER',
+                                     user_id=flask.session['user_id'])
 
     elif flask.request.method == 'POST':
         monster_data = monster_input.gather_monster_data(flask.request.form)
+
+        # Validate input
+        not_null_fields = [monster_data['name'],
+                           monster_data['diet'],
+                           monster_data['enjoys']]
+
+        for user_input in not_null_fields:
+            if len(user_input) < 1:
+                return ('', 204)
+
         create_response = database_operations.create_monster(monster_data, db_session)
         return create_response
 
