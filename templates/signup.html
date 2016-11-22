@@ -3,17 +3,19 @@
 {% block content %}
 <div class='container-fluid'>
     <div class='row'>
-        <div id='login-alert' class="alert text-center hide">
+        <div class='col-sm-12'>
+            <div id='login-alert' class="alert text-center hide">
+            </div>
         </div>
     </div>
     <div class='row'>
-        <div class='col-md-4 col-md-offset-4 text-center'>
-            <div id='facebook-login'>
-                <fb:login-button scope='public_profile,email' onlogin='facebookLogin();' data-size='large'>
+        <div class='col-sm-12'>
+            <div id='facebook-login' class='social-login-box'>
+                <fb:login-button scope='public_profile,email' onlogin='facebookLogin();' data-size='large' class='login-button'>
                 </fb:login-button>
             </div>
-            <div id="google-login">
-                <span class="g-signin"
+            <div id="google-login" class='social-login-box'>
+                <span class="g-signin login-button"
                     data-scope="openid email"
                     data-clientid='478230017741-rd1hon3dcgt9eoutdkjd5lsiidat2gp5.apps.googleusercontent.com'
                     data-redirecturi="postmessage"

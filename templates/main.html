@@ -2,72 +2,45 @@
 {% block content %}
 
 <script src="{{url_for('static', filename='monsterSort.js')}}"></script>
-<div class='container-fluid monster-display-grid'>
-	<div id='login-success' class="alert alert-success text-center hide">
-  		<strong>Success!</strong> You are now logged in.
-  		<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-	</div>
-	<div  id='login-fail' class="alert alert-danger text-center hide">
-  		<strong>Login failed.</strong> Please try again.
-  		<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-	</div>
-	<div class='row'>
-		<div class='col-md-12'>
-			<form id='monster-sort' class='form'>
-				<div class='form-group'>
-					<div class="col-sm-4 col-sm-offset-8">
-					  	<select class='form-control' name='monster-sort'>
-					  		<option selected='selected' disabled='disabled'>Sort by monster type</option>
-					    	<option value='good'>Good</option>
-					    	<option value='evil'>Evil</option>
-					    	<option value='conflicted'>Conflicted</option>
-					    	<option value='all'>All</option>
-					  	</select>
-					</div>
-				</div>
-			</form>
-		</div>
-	</div>
-	<div class='row'>
-	{% for monster in monsters: %}
-		<div class='col-md-6 monster-box {{monster.intentions.lower()}}'>
-			<div class='row monster-name-box'>
-				<div class='row'>
-					<div class='col-sm-12 text-left'>
-						<p class='intentions-tag'>{{monster.intentions.upper()}}</p>
-					</div>
-				</div>
-				<div class='row'>
-					<div class='col-sm-12 text-center'>
-						<h2>{{monster.name}}</h2>
-					</div>
-				</div>
-			</div>
-			<div class='row'>
-				<div class='col-sm-5 col-sm-offset-1 monster-description-box'>
-					<h4>Eats:</h4>
-					<p>{{monster.diet}}</p>
-					<h4>Enjoys:</h4>
-					<p>{{monster.enjoys}}</p>
-				</div>
-				<div class='col-sm-5 monster-picture-box'>
-					<img src='{{monster.picture}}' class='img-responsive'>
-				</div>
-			</div>
-			<!-- Maybe only show this if user=creator? -->
-			<div class='row'>
-				<div class='col-sm-2 col-sm-offset-8'>
-					<a href='/edit/{{monster.id}}' class='btn btn-default'>Edit</a>
-				</div>
-				<div class='col-sm-2'>
-					<form action='/delete/{{monster.id}}' method='post'>
-						<input type='submit' class='btn btn-default' value='Delete'>
-					</form>
-				</div>
-			</div>
-		</div>
-	{% endfor %}
-	</div>
+<div class='container monster-display-grid'>
+    <div class='row'>
+        <div class='col-md-4 text-left'>
+            <form id='monster-sort' class='form sort-dropdown'>
+                <select class='form-control' name='monster-sort'>
+                    <option selected='selected' disabled='disabled'>Sort by monster type:</option>
+                    <option value='good'>Good</option>
+                    <option value='evil'>Evil</option>
+                    <option value='conflicted'>Conflicted</option>
+                    <option value='all'>All</option>
+                </select>
+            </form>
+        </div>
+        <div class='create-button-box col-sm-8'>
+        {% if user_id %}
+            <a href='/create' class='btn btn-secondary'>CREATE A MONSTER</a>
+        {% endif %}
+        </div>
+    </div>
+    <div class='card-columns'>
+    {% for monster in monsters: %}
+        <div class='card monster-card {{monster.intentions.lower()}}'>
+            <img class='card-img-top center-block' src='{{monster.picture}}' alt='monster.name image'>
+            <div class='card-block'>
+                <h2 class='card-title'><strong>{{monster.intentions.upper()}} </strong><span class='monster-name'>{{monster.name}}</span></h2>
+            </div>
+            <ul class='list-group list-group-flush'>
+                <li class='list-group-item'><strong>EATS </strong>{{monster.diet}}</li>
+                <li class='list-group-item'><strong>ENJOYS </strong>{{monster.enjoys}}</li>
+            </ul>
+            {% if monster.creator == user_id %}
+            <div class='card-block'>
+                <a href='/edit/{{monster.id}}' class='btn btn-default'>Edit</a>
+                <input type='submit' class='btn btn-default' value='Delete'>
+            </div>
+            {% endif %}
+        </div>
+    {% endfor %}
+    </div>
 </div>
 
 {% endblock %}

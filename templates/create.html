@@ -1,37 +1,35 @@
 {% extends "base.html" %}
 {% block content %}
 <script src="{{url_for('static', filename='monsterCreate.js')}}"></script>
+<script src="https://use.fontawesome.com/26b2bf4975.js"></script>
 <div class='container-fluid'>
 	<div class='row'>
-		<form id='monster-create' method='post' class='form-horizontal'>
+		<form id='monster-create' method='post'>
 			<div class="col-md-4 col-md-offset-2">
-				<fieldset>
-					<div class='form-group'>
-						<label for='name' class="col-sm-3 control-label">Name</label>
-						<div class="col-sm-9">
-							<input type='text' name='name' class='form-control' value='{{name}}'>
+				<fieldset class='monster-text-input'>
+					<div class='form-group row'>
+						<div class="col-sm-12">
+							<input type='text' name='name' class='form-control' value='{{name}}' placeholder='MONSTER NAME'>
 						</div>
 					</div>
-					<div class='form-group'>
-						<label for='intentions' class='col-sm-3 control-label'>Intentions</label>
-						<div class="col-sm-9">
+					<div class='form-group row'>
+						<div class="col-sm-12">
 					  		<select class='form-control' name='intentions' value='{{intentions}}'>
+					  			<option selected='selected' disabled='disabled'>INTENTIONS</option>
 					    		<option value='good'>Good</option>
 					    		<option value='evil'>Evil</option>
 					    		<option value='conflicted'>Conflicted</option>
 					  		</select>
 					  	</div>
 					</div>
-					<div class='form-group'>
-						<label for='diet' class="col-sm-3 control-label">Diet</label>
-						<div class="col-sm-9">
-							<textarea class='form-control' name='diet'>{{diet}}</textarea>
+					<div class='form-group row'>
+						<div class="col-sm-12">
+							<textarea class='form-control' name='diet' placeholder='DIET'>{{diet}}</textarea>
 						</div>
 					</div>
-					<div class='form-group'>
-						<label for='name' class="col-sm-3 control-label">Enjoys</label>
-						<div class="col-sm-9">
-							<textarea class='form-control' name='enjoys'>{{enjoys}}</textarea>
+					<div class='form-group row'>
+						<div class="col-sm-12">
+							<textarea class='form-control' name='enjoys' placeholder='ENJOYS'>{{enjoys}}</textarea>
 						</div>
 					</div>
 				</fieldset>
@@ -39,41 +37,63 @@
 			<div class="col-md-4">
 				<div class='form-group'>
 					<div class='row'>
-						<label for='picture'>Draw a picture</label>
-						<div class="col-sm-10">
-							<canvas id='monster-canvas' width="300" height="300" style='border: 2px solid black' data-previmage='{{picture_url}}'></canvas>
+						<div class="col-xs-10">
+							<canvas id='monster-canvas' width="300" height="300" data-previmage='{{picture_url}}'></canvas>
 						</div>
-					</div>
-					<div class='row'>
-						<button type='submit' id='clear-canvas'>Clear</button>
-					</div>
-					<div class='pencil-color-choice row'>
-						<div class='col-sm-1 col-sm-offset-1 pencil-color purple'>
-						</div>
-						<div class='col-sm-1 pencil-color blue'>
-						</div>
-						<div class='col-sm-1 pencil-color green'>
-						</div>
-						<div class='col-sm-1 pencil-color yellow'>
-						</div>
-						<div class='col-sm-1 pencil-color orange'>
-						</div>
-						<div class='col-sm-1 pencil-color red'>
-						</div>
-						<div class='col-sm-1 pencil-color black'>
-						</div>
-						<div class='col-sm-1 pencil-color white'>
+						<div class='col-xs-2 draw-control-panel'>
+							<table class='table pencil-color-choice'>
+								<tr>
+									<div class='fa-pencil-box'>
+										<i class='fa fa-pencil' aria-hidden='true'></i>
+									</div>
+								</tr>
+								<tr>
+									<div class='pencil-color blue'>
+									</div>
+								</tr>
+								<tr>
+									<div class='pencil-color darkgreen'>
+									</div>
+								</tr>
+								<tr>
+									<div class='pencil-color green'>
+									</div>
+								</tr>
+								<tr>
+									<div class='pencil-color orange'>
+									</div>
+								</tr>
+								<tr>
+									<div class='pencil-color pink'>
+									</div>
+								</tr>
+								<tr>
+									<div class='pencil-color brown'>
+									</div>
+								</tr>
+								<tr>
+									<div class='pencil-color black'>
+									</div>
+								</tr>
+								<tr>
+									<div class='pencil-color white'>
+									</div>
+								</tr>
+								<tr>
+									<div class='clear-button-container'>
+										<button type='submit' id='clear-canvas'>CLEAR</button>
+									</div>
+								</tr>
+							</table>
 						</div>
 					</div>
 				</div>
 			</div>
 	</div>
 	<div class='row'>
-			<div class='form-group'>
-    			<div class='col-sm-offset-2 col-sm-10'>
-      				<button type='submit' class='btn btn-default' name='create-monster' id='create-monster'>{{submit_button_text}}</button>
-    			</div>
-  			</div>
+    		<div class='col-md-offset-2 col-md-4'>
+      			<button type='submit' class='btn btn-secondary' name='create-monster' id='create-monster'>{{submit_button_text}}</button>
+    		</div>
 		</form>
 	</div>
 </div>
