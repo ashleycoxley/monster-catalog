@@ -53,6 +53,9 @@ def create():
 
 @app.route('/edit/<int:monster_id>', methods=['GET', 'POST'])
 def edit_monster(monster_id):
+    if 'user_id' not in flask.session:
+        return flask.redirect('/signin')
+
     monster = database_operations.authorize_monster_change(monster_id,
                                                            db_session)
     if flask.request.method == 'GET':
@@ -74,6 +77,9 @@ def edit_monster(monster_id):
 
 @app.route('/delete/<int:monster_id>', methods=['POST'])
 def delete_monster(monster_id):
+    if 'user_id' not in flask.session:
+        return flask.redirect('/signin')
+
     monster = database_operations.authorize_monster_change(monster_id,
                                                            db_session)
     try:
@@ -88,14 +94,6 @@ def delete_monster(monster_id):
         return flask.redirect('/')
 
 
-@app.route('/api/monsters', methods=['GET'])
-def monsters():
-    monsters = db_session.query(Monster).all()
-    monsters_serialized = [monster.serialize for monster in monsters]
-
-    return flask.jsonify(monsters=monsters_serialized)
-
-
 @app.route('/signin')
 def sign_in():
     if 'user_id' not in flask.session:
@@ -105,6 +103,14 @@ def sign_in():
     else:
         # If user is logged in, return to main page
         return flask.redirect('/')
+
+
+@app.route('/api/monsters', methods=['GET'])
+def monsters():
+    monsters = db_session.query(Monster).all()
+    monsters_serialized = [monster.serialize for monster in monsters]
+
+    return flask.jsonify(monsters=monsters_serialized)
 
 
 @app.route('/fbconnect', methods=['POST'])
