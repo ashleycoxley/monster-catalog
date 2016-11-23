@@ -131,8 +131,12 @@ def sign_in():
 
 
 @app.route('/api/monsters', methods=['GET'])
-def monsters():
-    monsters = db_session.query(Monster).all()
+@app.route('/api/monsters/<int:monster_id>', methods=['GET'])
+def monsters(monster_id=None):
+    if monster_id is None:
+        monsters = db_session.query(Monster).all()
+    else:
+        monsters = db_session.query(Monster).filter_by(id=monster_id).all()
     monsters_serialized = [monster.serialize for monster in monsters]
 
     return flask.jsonify(monsters=monsters_serialized)
