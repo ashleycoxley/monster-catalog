@@ -15,7 +15,6 @@ def decode_and_add_picture(encoded_picture):
         s3_store_picture(picture_id, picture)
         return picture_url
     except:
-        # Add error message here in template
         return flask.render_template('create.html')
 
 

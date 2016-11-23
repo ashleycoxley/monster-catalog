@@ -17,6 +17,12 @@ Requires Python 2.7, Vagrant, and apps registered with Facebook and Google for 3
 + Register at [Google Developer Console](https://console.developers.google.com/) and create a project
 + Download app credentials and add filename to ```oauth_vars.py```
 
+### Amazon Web Services S3 setup
++ Create an AWS account at [AWS Management Console](https://aws.amazon.com/console/)
++ Create an S3 bucket
++ Create an IAM user with permissions for accessing S3
++ Add bucket name and credentials to ```monster_config_example.py``` and rename to ```monster_config.py```
+
 ### Starting the local development server
 + Clone this repository
 + From the root monster-catalog folder, run ```vagrant up```
